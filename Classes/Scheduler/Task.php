@@ -27,6 +27,7 @@ namespace DmitryDulepov\DdGooglesitemap\Scheduler;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\MathUtility;
 
 /**
  * This class provides a scheduler task to create sitemap index as required
@@ -99,15 +100,14 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 		fwrite($indexFile, '<?xml version="1.0" encoding="UTF-8"?>' . chr(10));
 		fwrite($indexFile, '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . chr(10));
 
-		$eIDscripts = GeneralUtility::trimExplode(chr(10), $this->eIdScriptUrl);
-		$eIDscripts = $this->expandEidUriWithLanguages($eIDscripts);
-		$eIdIndex = 1;
-		foreach ($eIDscripts as $eIdScriptUrl) {
+		$eIDscripts = $this->expandEidUriWithLanguages($this->getEIdScriptUrls());
+		foreach ($eIDscripts as $eIdIndex => $eIdScriptUrl) {
 			$this->offset = 0;
 			$currentFileNumber = 1;
 			$lastFileHash = '';
 			do {
-				$sitemapFileName = sprintf($this->sitemapFileFormat, $eIdIndex, $currentFileNumber++);
+				$index = MathUtility::canBeInterpretedAsInteger($eIdIndex) ? sprintf('%05d', $eIdIndex +  1) : $eIdIndex;
+				$sitemapFileName = sprintf($this->sitemapFileFormat, $index, $currentFileNumber++);
 				$this->buildSitemap($eIdScriptUrl, $sitemapFileName);
 
 				$isSitemapEmpty = $this->isSitemapEmpty($sitemapFileName);
@@ -122,7 +122,6 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 					$lastFileHash = $currentFileHash;
 				}
 			} while (!$stopLoop);
-			$eIdIndex++;
 		}
 
 		fwrite($indexFile, '</sitemapindex>' . chr(10));
@@ -157,6 +156,27 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 	 */
 	public function getEIdScriptUrl() {
 		return $this->eIdScriptUrl;
+	}
+
+	/**
+	 * @return array
+	 */
+	private function getEIdScriptUrls() {
+		$eIDscripts = GeneralUtility::trimExplode(chr(10), $this->eIdScriptUrl);
+		if (!empty($eIDscripts)) {
+			$scripts = array();
+			foreach ($eIDscripts as $key => $script) {
+				if (strpos($script, '=>') > 0) {
+					list($key, $script) = GeneralUtility::trimExplode('=>', $script);
+				}
+
+				$scripts[$key] = $script;
+			}
+
+			$eIDscripts = $scripts;
+		}
+
+		return $eIDscripts;
 	}
 
 	/**
@@ -301,7 +321,8 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 	 * @return void
 	 */
 	protected function buildBaseUrl() {
-		$urlParts = parse_url($this->eIdScriptUrl);
+		$eIdScriptUrl = $this->getEIdScriptUrls();
+		$urlParts = parse_url(reset($eIdScriptUrl));
 		$this->baseUrl = $urlParts['scheme'] . '://';
 		if ($urlParts['user']) {
 			$this->baseUrl .= $urlParts['user'];
@@ -358,7 +379,7 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 	protected function buildSitemapFileFormat() {
 		$fileParts = pathinfo($this->indexFilePath);
 		$directoryPrefix = ($fileParts['dirname'] === '.'? '' : $fileParts['dirname'] . '/');
-		$this->sitemapFileFormat = $directoryPrefix . $fileParts['filename'] . '_sitemap_%05d_%05d.xml';
+		$this->sitemapFileFormat = $directoryPrefix . $fileParts['filename'] . '_sitemap_%s_%05d.xml';
 	}
 
 	/**

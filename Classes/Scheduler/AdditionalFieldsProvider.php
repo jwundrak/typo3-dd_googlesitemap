@@ -69,7 +69,8 @@ class AdditionalFieldsProvider implements \TYPO3\CMS\Scheduler\AdditionalFieldPr
 		$renderLangHint = $GLOBALS['LANG']->sL('LLL:EXT:dd_googlesitemap/locallang.xml:scheduler.renderAllLanguages.notice');
 
 		$additionalFields['eIdUrl'] = array(
-			'code'     => '<textarea class="form-control" name="tx_scheduler[eIdUrl]" wrap="off">' . htmlspecialchars($url) . '</textarea>',
+			'code'     => '<textarea class="form-control" name="tx_scheduler[eIdUrl]" wrap="off">' . htmlspecialchars($url) . '</textarea>'
+				. '<p>' . $GLOBALS['LANG']->sL('LLL:EXT:dd_googlesitemap/locallang.xml:scheduler.eIDFieldLabel.notice') . '</p>',
 			'label'    => 'LLL:EXT:dd_googlesitemap/locallang.xml:scheduler.eIDFieldLabel',
 			'cshKey'   => '',
 			'cshLabel' => ''
@@ -215,7 +216,15 @@ class AdditionalFieldsProvider implements \TYPO3\CMS\Scheduler\AdditionalFieldPr
 	 * @param array $errors
 	 */
 	protected function validateEIdUrl(array &$submittedData, array &$errors) {
-		foreach (GeneralUtility::trimExplode(chr(10), $submittedData['eIdUrl']) as $url) {
+		foreach (GeneralUtility::trimExplode(chr(10), $submittedData['eIdUrl']) as $key => $url) {
+			if (FALSE !== strpos($url, '=>')) {
+				list($key, $url) = GeneralUtility::trimExplode('=>', $url);
+
+				if (!preg_match('/^[a-z][a-zA-Z0-9]+$/', $key)) {
+					$errors[] = 'scheduler.error.wrongIndexName';
+				}
+			}
+
 			if (FALSE !== ($urlParts = parse_url($url))) {
 				if (!$urlParts['host']) {
 					$errors[] = 'scheduler.error.missingHost';
