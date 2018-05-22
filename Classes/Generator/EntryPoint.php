@@ -24,6 +24,7 @@
 
 namespace DmitryDulepov\DdGooglesitemap\Generator;
 
+use DmitryDulepov\DdGooglesitemap\Helper\ConfigurationHelper;
 use \TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -40,6 +41,15 @@ class EntryPoint {
 	public function __construct() {
 		@set_time_limit(300);
 		$this->initTSFE();
+
+		/** @var ConfigurationHelper $configurationHelper */
+		$configurationHelper = GeneralUtility::makeInstance('DmitryDulepov\\DdGooglesitemap\\Helper\\ConfigurationHelper');
+		if ($configurationHelper->isOnlySchedulerMode() && !$configurationHelper->isAuthenticationValid()) {
+			header('HTTP/1.1 403 Forbidden', true, 403);
+			header('Content-type: text/plain');
+			echo 'Only scheduler mode is active';
+			exit;
+		}
 	}
 
 	/**

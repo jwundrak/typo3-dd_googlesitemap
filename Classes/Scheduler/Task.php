@@ -24,6 +24,7 @@
 
 namespace DmitryDulepov\DdGooglesitemap\Scheduler;
 
+use DmitryDulepov\DdGooglesitemap\Helper\ConfigurationHelper;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -58,6 +59,9 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 	/** @var string */
 	private $sitemapFileFormat;
 
+	/** @var array|bool */
+	private $authHeader;
+
 	/** @var int */
 	private $offset;
 
@@ -81,6 +85,7 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 	 */
 	public function __wakeup() {
 		$this->buildSitemapFileFormat();
+		$this->getAuthHeader();
 		$this->buildBaseUrl();
 	}
 
@@ -349,7 +354,7 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 		$url = $eIdScriptUrl . sprintf('&offset=%d&limit=%d', $this->offset, $this->maxUrlsPerSitemap);
 
 		$report = array();
-		$content = GeneralUtility::getUrl($url, 0, FALSE, $report);
+		$content = GeneralUtility::getUrl($url, 0, $this->getAuthHeader(), $report);
 
 		if ($content) {
 			file_put_contents(PATH_site . $sitemapFileName, $content);
@@ -369,6 +374,28 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 			$defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
 			$defaultFlashMessageQueue->enqueue($flashMessage);
 		}
+	}
+
+	/**
+	 * @return array|bool
+	 * @throws \InvalidArgumentException
+	 */
+	protected function getAuthHeader() {
+		if($this->authHeader === null) {
+			/** @var ConfigurationHelper $configurationHelper */
+			$configurationHelper = GeneralUtility::makeInstance('DmitryDulepov\\DdGooglesitemap\\Helper\\ConfigurationHelper');
+
+			if($configurationHelper->isOnlySchedulerMode()) {
+				$this->authHeader = array(
+					'Authorization: Bearer ' . sha1($configurationHelper->getSchedulerModeToken())
+				);
+			}
+			else {
+				$this->authHeader = false;
+			}
+		}
+
+		return $this->authHeader;
 	}
 
 	/**

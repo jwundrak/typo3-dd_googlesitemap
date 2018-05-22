@@ -1,0 +1,7 @@
+# Global backend configurations
+
+# cat=basic/enable; type=boolean; label=Enable only scheduler mode
+onlySchedulerMode = 0
+
+# cat=basic/enable; type=string; label=Token for scheduler
+schedulerModeToken =
