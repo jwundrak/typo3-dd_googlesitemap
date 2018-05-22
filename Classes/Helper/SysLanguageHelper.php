@@ -109,7 +109,11 @@ class SysLanguageHelper implements SingletonInterface {
 				if (is_array(
 					$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['dd_google_sitemap/sys_language_helper']['alternateSysLanguageIdsPostProc']
 				)) {
-					$params = array('templateService' => $templateService);
+					$params = array(
+						'currentLocale'   => $setLocale,
+						'sysLanguageUid'  => (int)$language['uid'],
+						'templateService' => $templateService
+					);
 					foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['dd_google_sitemap/sys_language_helper']['alternateSysLanguageIdsPostProc'] as $funcRef) {
 						GeneralUtility::callUserFunction($funcRef, $params, $this);
 					}
