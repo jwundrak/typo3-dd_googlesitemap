@@ -306,10 +306,16 @@ class Task extends \TYPO3\CMS\Scheduler\Task\AbstractTask {
 			$uris = array();
 			if (!empty($languageUids)) {
 				foreach ($languageUids as $language) {
-					foreach ($eIdUris as $eIdScript) {
+					foreach ($eIdUris as $eScriptName => $eIdScript) {
 						// remove possible anchor, which make no sense
 						$anchorFree = explode('#', $eIdScript, 2);
-						$uris[]     = rtrim($anchorFree[0], '&') . '&L=' . $language;
+						$uri        = rtrim($anchorFree[0], '&') . '&L=' . $language;
+
+						if(MathUtility::canBeInterpretedAsInteger($eScriptName)) {
+							$uris[] = $uri;
+						} else {
+							$uris[$eScriptName . '-' . $language] = $uri;
+						}
 					}
 				}
 
