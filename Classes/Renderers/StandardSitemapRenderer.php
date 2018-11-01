@@ -70,7 +70,7 @@ class StandardSitemapRenderer extends AbstractExtendedSitemapRenderer {
 	 */
 	public function renderEntry($url, $title, $lastModification = 0, $changeFrequency = '', $keywords = '', $priority = '', $additionalParams = null) {
 		$content = '<url>';
-		$content .= '<loc>' . $url . '</loc>';
+		$content .= '<loc>' . $this->sanitizeUrl($url) . '</loc>';
 		if ($lastModification) {
 			$content .= '<lastmod>' . date('c', $lastModification) . '</lastmod>';
 		}

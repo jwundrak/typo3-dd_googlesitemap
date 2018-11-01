@@ -63,11 +63,22 @@ abstract class AbstractExtendedSitemapRenderer extends AbstractEntity {
 		$hrefLangEntries = array();
 		if (!empty($linkItems)) {
 			foreach($linkItems as $languageCode => $targetUrl) {
-				$hrefLangEntries[] = '<xhtml:link rel="alternate" hreflang="' . $languageCode . '" href="' . $targetUrl . '"/>';
+				$url = $this->sanitizeUrl($targetUrl);
+				$hrefLangEntries[] = '<xhtml:link rel="alternate" hreflang="' . $languageCode . '" href="' . $url . '"/>';
 			}
 		}
 
 		return join('', $hrefLangEntries);
+	}
+
+	/**
+     * replace & by &amp;
+     *
+	 * @param string $url
+	 * @return string
+	 */
+	protected function sanitizeUrl($url) {
+		return preg_replace('/&(?!#?[a-z0-9]+;)/', '&amp;', $url);
 	}
 }
 
